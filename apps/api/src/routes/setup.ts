@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { hashSync } from "bcryptjs";
 import type { Bindings } from "../types";
 import { createDb } from "../db";
+import { hashPassword } from "../utils/password";
 import type { User } from "@dash/db";
 
 const setup = new Hono<{ Bindings: Bindings }>();
@@ -14,7 +14,7 @@ setup.post("/", async (c) => {
     return c.json({ message: "El sistema ya está configurado", initialized: true });
   }
 
-  const hash = hashSync("admin123", 10);
+  const hash = await hashPassword("admin123");
   await db.qRun(
     "INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'admin')",
     "admin", hash

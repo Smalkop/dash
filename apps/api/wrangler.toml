@@ -7,12 +7,12 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "dash-db"
-database_id = ""
+database_id = "9636ceb9-0797-4016-a40c-a125917be9ab"
 
 # KV for cache/state
 [[kv_namespaces]]
 binding = "CACHE"
-id = ""
+id = "bfa73b1c43c64cce8ea5f3f1053cd326"
 
 # R2 for exports
 [[r2_buckets]]

@@ -112,4 +112,4 @@ INSERT OR IGNORE INTO pricing_tiers (id, plan_name, included_requests, included_
 
 -- Insertar admin por defecto (password: admin123)
 INSERT OR IGNORE INTO users (id, username, password_hash, role, client_id) VALUES
-  (1, 'admin', '$2a$10$bmCjk1rqQdgEXWxSQTJSB.pCr3TiaqJOMUi1H8qwqrSRTIEECeTyS', 'admin', NULL);
+  (1, 'admin', '100000:330ec6a5f17148f96951fdbb5611889debfa1ec9a1c2810eca95040933057890:9d1f04ca28e55cb998c1f0fbd0b2f2442538765f9420b91519c02fc853609c8187ade87f992ae9210112c7281405c2b65c63f2975dc175ae938b178f5b554a9d', 'admin', NULL);

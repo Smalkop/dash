@@ -8,7 +8,8 @@ export async function errorMiddleware(c: Context<{ Bindings: Bindings }>, next: 
     console.error("Unhandled error:", err);
     return c.json({
       error: "Internal Server Error",
-      message: err instanceof Error ? err.message : "Error inesperado",
+      message: err instanceof Error ? `Error: ${err.message}` : "Error inesperado",
+      stack: err instanceof Error ? err.stack : undefined,
     }, 500);
   }
 }

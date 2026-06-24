@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { useEffect } from "react";
-import { AuthProvider, useAuth } from "../lib/auth";
+import { useAuth } from "../lib/auth";
 import {
   LayoutDashboard, Users, Server, BarChart3, FileText, LogOut, Menu, X,
 } from "lucide-react";
@@ -82,9 +82,5 @@ function AdminLayoutInner() {
 }
 
 export default function AdminLayout() {
-  return (
-    <AuthProvider>
-      <AdminLayoutInner />
-    </AuthProvider>
-  );
+  return <AdminLayoutInner />;
 }

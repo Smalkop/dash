@@ -1,11 +1,9 @@
 import { defineConfig } from "vite";
-import { reactRouter } from "@react-router/dev/vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  plugins: [reactRouter()],
-  ssr: {
-    resolve: {
-      conditions: ["workerd", "worker", "browser"],
-    },
+  plugins: [react()],
+  build: {
+    outDir: "build/client",
   },
 });

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { useEffect } from "react";
-import { AuthProvider, useAuth } from "../lib/auth";
+import { useAuth } from "../lib/auth";
 import {
   LayoutDashboard, FileText, Bell, LogOut,
 } from "lucide-react";
@@ -81,9 +81,5 @@ function ClientLayoutInner() {
 }
 
 export default function ClientLayout() {
-  return (
-    <AuthProvider>
-      <ClientLayoutInner />
-    </AuthProvider>
-  );
+  return <ClientLayoutInner />;
 }

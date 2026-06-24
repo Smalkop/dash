@@ -7,5 +7,4 @@ compatibility_flags = ["nodejs_compat"]
 bucket = "build/client"
 
 [vars]
-API_URL = "https://dash-api.seutodominio.workers.dev"
 ENVIRONMENT = "production"

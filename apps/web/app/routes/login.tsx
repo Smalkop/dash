@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { AuthProvider, useAuth } from "../lib/auth";
+import { useAuth } from "../lib/auth";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
@@ -85,9 +85,5 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return (
-    <AuthProvider>
-      <LoginForm />
-    </AuthProvider>
-  );
+  return <LoginForm />;
 }
