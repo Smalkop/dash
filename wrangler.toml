@@ -1,0 +1,38 @@
+name = "dash-api"
+main = "apps/api/src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Build the web SPA before deploying
+[build]
+command = "npm run build"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "dash-db"
+database_id = "9636ceb9-0797-4016-a40c-a125917be9ab"
+
+# KV for cache/state
+[[kv_namespaces]]
+binding = "CACHE"
+id = "bfa73b1c43c64cce8ea5f3f1053cd326"
+
+# R2 for exports
+[[r2_buckets]]
+binding = "EXPORTS"
+bucket_name = "dash-exports"
+
+# Cron Trigger (daily at 00:05 UTC)
+[triggers]
+crons = ["5 0 * * *"]
+
+# Static assets for the SPA frontend
+[site]
+bucket = "apps/web/build/client"
+
+# Environment variables - set via wrangler secret:
+# JWT_SECRET, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_TAG
+
+[vars]
+ENVIRONMENT = "production"

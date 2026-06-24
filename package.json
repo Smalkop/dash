@@ -7,8 +7,8 @@
     "dev:api": "npm run -w @dash/api dev",
     "dev:web": "npm run -w @dash/web dev",
     "build": "npm run -w @dash/web build",
-    "deploy": "npm run build && npm run -w @dash/api deploy",
-    "deploy:api": "npm run -w @dash/api deploy",
+    "deploy": "npx wrangler deploy",
+    "deploy:api": "npx wrangler deploy",
     "migrate": "npm run -w @dash/api migrate",
     "typecheck": "npm run -w @dash/api typecheck && npm run -w @dash/web typecheck"
   },
