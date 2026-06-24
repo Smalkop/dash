@@ -4,6 +4,7 @@ export interface Env {
   DB: D1Database;
   CACHE: KVNamespace;
   EXPORTS: R2Bucket;
+  ASSETS: Fetcher;
   JWT_SECRET: string;
   CLOUDFLARE_API_TOKEN: string;
   CLOUDFLARE_ACCOUNT_TAG: string;
