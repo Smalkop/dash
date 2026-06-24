@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AuthProvider } from "../app/lib/auth";
+import "../app/styles/app.css";
 
 import AdminLayout from "../app/components/admin-layout";
 import ClientLayout from "../app/components/client-layout";
