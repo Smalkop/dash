@@ -28,8 +28,10 @@ bucket_name = "dash-exports"
 crons = ["5 0 * * *"]
 
 # Static assets for the SPA frontend
-[site]
-bucket = "apps/web/build/client"
+[assets]
+directory = "apps/web/build/client"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
 
 # Environment variables - set via wrangler secret:
 # JWT_SECRET, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_TAG

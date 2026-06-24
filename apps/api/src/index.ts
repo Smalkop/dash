@@ -57,7 +57,6 @@ app.get("/api/cron/manual", async (c) => {
 export default {
   async fetch(request: Request, env: Bindings, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    const isStaticAsset = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|webp|avif)$/i.test(url.pathname);
 
     // API routes go through Hono
     if (url.pathname.startsWith("/api/")) {
@@ -67,13 +66,16 @@ export default {
     // Static assets and SPA routes
     try {
       const response = await env.ASSETS.fetch(request);
-      if (response.status === 404 && !isStaticAsset) {
-        // SPA fallback: serve index.html for client-side routing
-        return env.ASSETS.fetch(new Request(new URL("/index.html", url.origin), request));
+      if (response.status === 404) {
+        return env.ASSETS.fetch(new Request(new URL("/index.html", url.origin)));
       }
       return response;
     } catch {
-      return new Response("Not Found", { status: 404 });
+      try {
+        return env.ASSETS.fetch(new Request(new URL("/index.html", url.origin)));
+      } catch {
+        return new Response("Not Found", { status: 404 });
+      }
     }
   },
   async scheduled(controller: ScheduledController, env: Bindings, ctx: ExecutionContext): Promise<void> {
