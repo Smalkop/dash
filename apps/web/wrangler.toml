@@ -1,0 +1,11 @@
+name = "dash-web"
+main = "server.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[site]
+bucket = "build/client"
+
+[vars]
+API_URL = "https://dash-api.seutodominio.workers.dev"
+ENVIRONMENT = "production"

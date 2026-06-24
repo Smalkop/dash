@@ -1,0 +1,20 @@
+{
+  "name": "dash",
+  "private": true,
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "npm run -w @dash/api dev",
+    "dev:web": "npm run -w @dash/web dev",
+    "build": "npm run -w @dash/web build",
+    "deploy": "npm run -w @dash/api deploy && npm run -w @dash/web deploy",
+    "deploy:api": "npm run -w @dash/api deploy",
+    "deploy:web": "npm run -w @dash/web deploy",
+    "migrate": "npm run -w @dash/api migrate",
+    "typecheck": "npm run -w @dash/api typecheck && npm run -w @dash/web typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "typescript": "^5.6.0"
+  }
+}

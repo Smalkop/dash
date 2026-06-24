@@ -1,0 +1,23 @@
+{
+  "name": "@dash/api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --remote",
+    "deploy": "wrangler deploy",
+    "migrate:local": "wrangler d1 execute dash-db --local --file=../../packages/db/src/migrations/001_initial.sql",
+    "migrate": "wrangler d1 execute dash-db --file=../../packages/db/src/migrations/001_initial.sql",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "jose": "^5.9.0",
+    "bcryptjs": "^2.4.3",
+    "@dash/db": "*"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "typescript": "^5.6.0",
+    "@cloudflare/workers-types": "^4.2024.0"
+  }
+}

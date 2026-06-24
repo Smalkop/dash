@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "jsx": "react-jsx",
+    "types": ["@cloudflare/workers-types/2023-07-01"],
+    "paths": {
+      "~/*": ["./app/*"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["app", "server.ts", "vite.config.ts", "react-router.config.ts", "tailwind.config.ts", "postcss.config.js"]
+}
