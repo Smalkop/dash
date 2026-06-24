@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiGet, apiPost, apiDelete, type PaginatedResponse } from "../lib/api";
-import { Plus, Trash2, Server } from "lucide-react";
+import { Plus, Trash2, Server, Search, RefreshCw } from "lucide-react";
 
 export default function AdminResourcesPage() {
   const [resources, setResources] = useState<any[]>([]);
@@ -8,6 +8,11 @@ export default function AdminResourcesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ client_id: "", resource_type: "worker_script", cloudflare_name: "", display_name: "" });
+
+  const [showDiscover, setShowDiscover] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [discovered, setDiscovered] = useState<any[]>([]);
+  const [discoveredInfo, setDiscoveredInfo] = useState<any>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -49,6 +54,37 @@ export default function AdminResourcesPage() {
     }
   };
 
+  const discoverResources = async () => {
+    setDiscovering(true);
+    try {
+      const res = await apiGet<any>("/resources/discover");
+      setDiscovered(res.new_resources || []);
+      setDiscoveredInfo(res);
+      setShowDiscover(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDiscovering(false);
+    }
+  };
+
+  const addDiscovered = async (item: any) => {
+    const clientId = clients.length > 0 ? clients[0].id : null;
+    if (!clientId) return;
+    try {
+      await apiPost("/resources", {
+        client_id: clientId,
+        resource_type: item.resource_type,
+        cloudflare_name: item.cloudflare_name,
+        display_name: item.cloudflare_name,
+      });
+      setDiscovered((prev) => prev.filter((r: any) => r.cloudflare_name !== item.cloudflare_name));
+      loadData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const resourceTypes = ["worker_script", "d1_database", "kv_namespace", "r2_bucket", "durable_object", "workflow"];
 
   return (
@@ -58,9 +94,15 @@ export default function AdminResourcesPage() {
           <h1 className="text-xl font-semibold text-slate-900">Recursos</h1>
           <p className="text-sm text-slate-500 mt-0.5">{resources.length} recursos asignados</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          <Plus className="w-4 h-4" /> Asignar recurso
-        </button>
+        <div className="flex gap-2">
+          <button onClick={discoverResources} disabled={discovering} className="btn-secondary">
+            <Search className={`w-4 h-4 ${discovering ? "animate-spin" : ""}`} />
+            {discovering ? "Descubriendo..." : "Descubrir"}
+          </button>
+          <button onClick={() => setShowForm(!showForm)} className="btn-primary">
+            <Plus className="w-4 h-4" /> Asignar recurso
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -96,6 +138,47 @@ export default function AdminResourcesPage() {
             <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancelar</button>
           </div>
         </form>
+      )}
+
+      {showDiscover && discoveredInfo && (
+        <div className="card p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Recursos descubiertos en Cloudflare</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {discoveredInfo.total_workers} Workers totales · {discoveredInfo.registered} registrados · {discoveredInfo.unregistered} sin asignar
+              </p>
+            </div>
+            <button onClick={() => setShowDiscover(false)} className="btn-secondary text-xs px-3 py-1.5">Cerrar</button>
+          </div>
+          {discovered.length === 0 ? (
+            <div className="text-center py-8 text-slate-400 text-sm">
+              <RefreshCw className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              Todos los Workers de Cloudflare ya están registrados
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {discovered.map((item: any) => (
+                <div key={item.cloudflare_name} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900">{item.cloudflare_name}</p>
+                    <p className="text-xs text-slate-400 capitalize">{item.resource_type.replace(/_/g, " ")} · {item.handlers?.join(", ") || "sin handlers"}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setForm({ ...form, cloudflare_name: item.cloudflare_name, resource_type: item.resource_type });
+                      setShowDiscover(false);
+                      setShowForm(true);
+                    }}
+                    className="btn-primary text-xs px-3 py-1.5 shrink-0"
+                  >
+                    Asignar a cliente
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {loading ? (

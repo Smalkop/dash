@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "wrangler dev --remote",
     "deploy": "wrangler deploy",
-    "migrate:local": "wrangler d1 execute dash-db --local --file=../../packages/db/src/migrations/001_initial.sql",
-    "migrate": "wrangler d1 execute dash-db --file=../../packages/db/src/migrations/001_initial.sql",
+    "migrate:local": "wrangler d1 execute dash-db --local --file=../../packages/db/src/migrations/001_initial.sql && wrangler d1 execute dash-db --local --file=../../packages/db/src/migrations/002_free_tier_imputed_cost.sql",
+    "migrate": "wrangler d1 execute dash-db --file=../../packages/db/src/migrations/001_initial.sql && wrangler d1 execute dash-db --file=../../packages/db/src/migrations/002_free_tier_imputed_cost.sql",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

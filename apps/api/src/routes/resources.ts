@@ -62,6 +62,52 @@ resources.get("/:id", async (c) => {
   return c.json(resource);
 });
 
+resources.get("/discover", adminOnly, async (c) => {
+  const db = createDb(c.env.DB);
+
+  try {
+    const { listWorkerScripts, resourceTypeFromHandlers } = await import("../services/cloudflare-api");
+
+    const scripts = await listWorkerScripts(
+      c.env.CLOUDFLARE_API_TOKEN,
+      c.env.CLOUDFLARE_ACCOUNT_TAG
+    );
+
+    const existing = await db.q<{ cloudflare_name: string }>(
+      "SELECT cloudflare_name FROM resources"
+    );
+    const existingNames = new Set(existing.map((r) => r.cloudflare_name));
+
+    const newResources = scripts
+      .filter((s) => !existingNames.has(s.id))
+      .map((s) => ({
+        cloudflare_name: s.id,
+        resource_type: resourceTypeFromHandlers(s.handlers),
+        handlers: s.handlers,
+        usage_model: s.usage_model,
+        created_on: s.created_on,
+        modified_on: s.modified_on,
+      }));
+
+    const totalWorkers = scripts.length;
+    const registeredCount = existing.length;
+    const unregisteredCount = newResources.length;
+
+    return c.json({
+      total_workers: totalWorkers,
+      registered: registeredCount,
+      unregistered: unregisteredCount,
+      new_resources: newResources,
+    });
+  } catch (err) {
+    console.error("Discovery error:", err);
+    return c.json({
+      error: "Internal Server Error",
+      message: err instanceof Error ? err.message : "Error al descubrir recursos",
+    }, 500);
+  }
+});
+
 resources.post("/", adminOnly, async (c) => {
   const body = await c.req.json<{
     client_id: number;

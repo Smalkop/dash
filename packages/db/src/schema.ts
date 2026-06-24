@@ -42,6 +42,9 @@ export interface UsageSnapshot {
   cpu_time_ms: number;
   wall_time_ms: number;
   estimated_cost_cents: number;
+  imputed_cost_cents: number;
+  free_tier_usage_percent: number;
+  free_tier_exceeded: number;
   created_at: string;
 }
 

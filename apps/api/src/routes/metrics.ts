@@ -25,11 +25,15 @@ metrics.get("/summary", async (c) => {
     total_cpu_ms: number;
     total_wall_ms: number;
     total_cost_cents: number;
+    total_imputed_cost_cents: number;
+    total_free_exceeded: number;
   }>(
     `SELECT COALESCE(SUM(us.requests_count), 0) as total_requests,
             COALESCE(SUM(us.cpu_time_ms), 0) as total_cpu_ms,
             COALESCE(SUM(us.wall_time_ms), 0) as total_wall_ms,
-            COALESCE(SUM(us.estimated_cost_cents), 0) as total_cost_cents
+            COALESCE(SUM(us.estimated_cost_cents), 0) as total_cost_cents,
+            COALESCE(SUM(us.imputed_cost_cents), 0) as total_imputed_cost_cents,
+            COALESCE(MAX(us.free_tier_exceeded), 0) as total_free_exceeded
      FROM usage_snapshots us
      JOIN resources r ON us.resource_id = r.id
      WHERE r.client_id = ? AND us.snapshot_date >= ? AND us.snapshot_date <= ?`,
@@ -41,11 +45,17 @@ metrics.get("/summary", async (c) => {
     requests_count: number;
     cpu_time_ms: number;
     cost_cents: number;
+    imputed_cost_cents: number;
+    free_tier_usage_percent: number;
+    free_tier_exceeded: number;
   }>(
     `SELECT us.snapshot_date,
             COALESCE(SUM(us.requests_count), 0) as requests_count,
             COALESCE(SUM(us.cpu_time_ms), 0) as cpu_time_ms,
-            COALESCE(SUM(us.estimated_cost_cents), 0) as cost_cents
+            COALESCE(SUM(us.estimated_cost_cents), 0) as cost_cents,
+            COALESCE(SUM(us.imputed_cost_cents), 0) as imputed_cost_cents,
+            COALESCE(MAX(us.free_tier_usage_percent), 0) as free_tier_usage_percent,
+            COALESCE(MAX(us.free_tier_exceeded), 0) as free_tier_exceeded
      FROM usage_snapshots us
      JOIN resources r ON us.resource_id = r.id
      WHERE r.client_id = ? AND us.snapshot_date >= ? AND us.snapshot_date <= ?
@@ -55,9 +65,71 @@ metrics.get("/summary", async (c) => {
   );
 
   return c.json({
-    summary: summary[0] || { total_requests: 0, total_cpu_ms: 0, total_wall_ms: 0, total_cost_cents: 0 },
+    summary: summary[0] || {
+      total_requests: 0, total_cpu_ms: 0, total_wall_ms: 0,
+      total_cost_cents: 0, total_imputed_cost_cents: 0, total_free_exceeded: 0,
+    },
     daily,
     period: { start, end },
+  });
+});
+
+metrics.get("/free-tier", async (c) => {
+  const user = c.get("user");
+  const clientId = c.req.query("client_id") ? parseInt(c.req.query("client_id")!, 10) : user.client_id;
+
+  if (user.role === "client" && clientId !== user.client_id) {
+    return c.json({ error: "Forbidden", message: "No tienes acceso a estos datos" }, 403);
+  }
+
+  const db = createDb(c.env.DB);
+  const today = new Date().toISOString().split("T")[0]!;
+
+  const todayUsage = await db.q<{
+    total_requests: number;
+    total_cpu_ms: number;
+    imputed_cost_cents: number;
+  }>(
+    `SELECT COALESCE(SUM(us.requests_count), 0) as total_requests,
+            COALESCE(SUM(us.cpu_time_ms), 0) as total_cpu_ms,
+            COALESCE(SUM(us.imputed_cost_cents), 0) as imputed_cost_cents
+     FROM usage_snapshots us
+     JOIN resources r ON us.resource_id = r.id
+     WHERE r.client_id = ? AND us.snapshot_date = ?`,
+    clientId, today
+  );
+
+  const s = todayUsage[0] || { total_requests: 0, total_cpu_ms: 0, imputed_cost_cents: 0 };
+
+  const FREE_DAILY_LIMIT = 100_000;
+  const FREE_CPU_BUDGET = FREE_DAILY_LIMIT * 10;
+
+  const requestsUsed = s.total_requests;
+  const cpuMsUsed = s.total_cpu_ms;
+  const requestsRemaining = Math.max(0, FREE_DAILY_LIMIT - requestsUsed);
+  const cpuBudgetForUsed = Math.min(requestsUsed, FREE_DAILY_LIMIT) * 10;
+  const cpuMsRemaining = Math.max(0, cpuBudgetForUsed - cpuMsUsed);
+  const usagePercent = Math.min(100, Math.round(
+    Math.max(
+      (requestsUsed / FREE_DAILY_LIMIT) * 100,
+      cpuMsUsed > 0 ? (cpuMsUsed / Math.max(1, cpuBudgetForUsed)) * 100 : 0
+    )
+  ));
+  const exceeded = requestsUsed > FREE_DAILY_LIMIT || cpuMsUsed > cpuBudgetForUsed;
+
+  return c.json({
+    date: today,
+    freeTier: {
+      requestsLimit: FREE_DAILY_LIMIT,
+      cpuMsLimit: FREE_CPU_BUDGET,
+      requestsUsed,
+      cpuMsUsed,
+      requestsRemaining,
+      cpuMsRemaining,
+      usagePercent,
+      exceeded,
+      imputedCostCents: s.imputed_cost_cents,
+    },
   });
 });
 
@@ -84,12 +156,14 @@ metrics.get("/by-resource", async (c) => {
     cpu_time_ms: number;
     wall_time_ms: number;
     estimated_cost_cents: number;
+    imputed_cost_cents: number;
   }>(
     `SELECT us.resource_id,
             COALESCE(SUM(us.requests_count), 0) as requests_count,
             COALESCE(SUM(us.cpu_time_ms), 0) as cpu_time_ms,
             COALESCE(SUM(us.wall_time_ms), 0) as wall_time_ms,
-            COALESCE(SUM(us.estimated_cost_cents), 0) as estimated_cost_cents
+            COALESCE(SUM(us.estimated_cost_cents), 0) as estimated_cost_cents,
+            COALESCE(SUM(us.imputed_cost_cents), 0) as imputed_cost_cents
      FROM usage_snapshots us
      WHERE us.resource_id IN (SELECT id FROM resources WHERE client_id = ? AND is_active = 1)
        AND us.snapshot_date >= ? AND us.snapshot_date <= ?
@@ -104,6 +178,7 @@ metrics.get("/by-resource", async (c) => {
       cpu_time_ms: 0,
       wall_time_ms: 0,
       estimated_cost_cents: 0,
+      imputed_cost_cents: 0,
     };
     return { ...r, usage };
   });
@@ -112,58 +187,9 @@ metrics.get("/by-resource", async (c) => {
 });
 
 metrics.post("/sync", adminOnly, async (c) => {
-  const { syncMetricsFromGraphQL } = await import("../services/cloudflare-graphql");
-  const { calculateCosts } = await import("../services/cost-calculator");
-  const { evaluateAlerts } = await import("../services/cloudflare-graphql");
-
-  const db = createDb(c.env.DB);
-  const date = c.req.query("date") || new Date(Date.now() - 86400000).toISOString().split("T")[0]!;
-
-  const resources = await db.q<Resource>(
-    "SELECT * FROM resources WHERE is_active = 1 AND resource_type = 'worker_script'"
-  );
-
-  let synced = 0;
-  let errors = 0;
-
-  for (const resource of resources) {
-    try {
-      const metrics = await syncMetricsFromGraphQL(
-        c.env.CLOUDFLARE_API_TOKEN,
-        c.env.CLOUDFLARE_ACCOUNT_TAG,
-        resource.cloudflare_name,
-        date,
-        date
-      );
-
-      const cost = await calculateCosts(db, resource.client_id, metrics.requests, metrics.cpuTimeMs);
-
-      await db.qRun(
-        `INSERT INTO usage_snapshots (resource_id, snapshot_date, requests_count, cpu_time_ms, wall_time_ms, estimated_cost_cents)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT(resource_id, snapshot_date) DO UPDATE SET
-           requests_count = excluded.requests_count,
-           cpu_time_ms = excluded.cpu_time_ms,
-           wall_time_ms = excluded.wall_time_ms,
-           estimated_cost_cents = excluded.estimated_cost_cents`,
-        resource.id,
-        date,
-        metrics.requests,
-        metrics.cpuTimeMs,
-        metrics.wallTimeMs,
-        cost.totalCents
-      );
-
-      synced++;
-    } catch (err) {
-      console.error(`Error syncing ${resource.cloudflare_name}:`, err);
-      errors++;
-    }
-  }
-
-  await evaluateAlerts(db, date);
-
-  return c.json({ message: "Sincronización completada", synced, errors, date });
+  const { discoverAndSyncResources } = await import("../services/cron");
+  const result = await discoverAndSyncResources(c.env);
+  return c.json(result);
 });
 
 export default metrics;
