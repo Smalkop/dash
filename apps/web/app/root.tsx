@@ -3,7 +3,12 @@ import type { LinksFunction, MetaFunction } from "react-router";
 
 import "./styles/app.css";
 
-export const links: LinksFunction = () => [];
+export const links: LinksFunction = () => [
+  { rel: "preconnect", href: "https://fonts.googleapis.com" },
+  { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+  { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" },
+];
+
 export const meta: MetaFunction = () => [
   { title: "Dash - Plataforma de Re-Facturación Cloudflare" },
   { name: "description", content: "Monitoreo y facturación de consumo Cloudflare" },
@@ -18,7 +23,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         {children}
         <ScrollRestoration />
         <Scripts />
